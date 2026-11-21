@@ -1,0 +1,7 @@
+# Both functions verify their own credentials: the charge endpoint validates the
+# user's Supabase Auth token; webhook validates Midtrans SHA-512 signature.
+[functions.hatop-qris]
+verify_jwt = false
+
+[functions.hatop-qris-webhook]
+verify_jwt = false

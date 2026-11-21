@@ -9,5 +9,5 @@
     "preview": "node server.mjs dist",
     "test": "node --test tests/*.test.mjs"
   },
-  "description": "HATOP Multi Vendor Demo + Supabase Cloud Backend (no Docker required)"
+  "description": "HATOP Marketplace Multi-Mitra + Supabase Cloud"
 }

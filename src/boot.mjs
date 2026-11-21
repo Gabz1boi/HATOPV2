@@ -1,5 +1,5 @@
-if(globalThis.HATOP_CONFIG?.url && globalThis.HATOP_CONFIG?.publishableKey){
-  await import('./cloud-app.mjs');
-}else{
-  await import('./main.mjs');
+// Cloud-only website. Older service workers must not serve a stale storefront.
+if(globalThis.navigator?.serviceWorker){
+  globalThis.navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister())).catch(()=>{});
 }
+await import('./cloud-app.mjs');

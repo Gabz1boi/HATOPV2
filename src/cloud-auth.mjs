@@ -66,3 +66,28 @@ export async function loadTable(table,query='select=*',requireAuth=true){return 
 export async function action(name,payload={}){return await apiFetch('/rest/v1/rpc/hatop_action',{method:'POST',body:{p_action:name,p_data:payload}});}
 export async function getIdentity(){return (await apiFetch('/auth/v1/user')).id;}
 export function configured(){return /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(cleanBase()) && key().startsWith('sb_publishable_');}
+
+// Direct Storage API adapter: uploads are authorized by Storage RLS policies.
+// Files are kept under the authenticated user's prefix and the listing identifier.
+const MEDIA_BUCKET='hatop-products';
+export async function uploadListingPhoto(listingId,file){
+ const allowed={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};
+ if(!allowed[file.type] || file.size<=0 || file.size>4*1024*1024)throw new Error('Foto harus JPG, PNG atau WebP, maksimal 4 MB.');
+ if(!/^[0-9a-f-]{36}$/i.test(String(listingId)))throw new Error('ID produk tidak valid.');
+ const user=await getIdentity();
+ const path=`${user}/${listingId}/${crypto.randomUUID()}.${allowed[file.type]}`;
+ const token=await accessToken();
+ const res=await fetch(`${cleanBase()}/storage/v1/object/${MEDIA_BUCKET}/${path}`,{
+  method:'POST',headers:{apikey:key(),Authorization:`Bearer ${token}`,'Content-Type':file.type,'x-upsert':'false'},body:file
+ });
+ let answer={};try{answer=await res.json();}catch{}
+ if(!res.ok)throw new Error(answer?.message||answer?.error||`Gagal unggah foto (HTTP ${res.status}).`);
+ return path;
+}
+export async function deleteListingPhoto(path){
+ if(!/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/i.test(String(path)))throw new Error('Lokasi foto tidak valid.');
+ const token=await accessToken();
+ const res=await fetch(`${cleanBase()}/storage/v1/object/${MEDIA_BUCKET}/${path}`,{method:'DELETE',headers:{apikey:key(),Authorization:`Bearer ${token}`}});
+ if(!res.ok){let answer={};try{answer=await res.json();}catch{}throw new Error(answer?.message||answer?.error||`Gagal menghapus foto (HTTP ${res.status}).`);}
+ return true;
+}
